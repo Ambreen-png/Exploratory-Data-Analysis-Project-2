@@ -1,19 +1,33 @@
-library("data.table")
-path <- getwd()
-download.file(url = "https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
-              , destfile = paste(path, "dataFiles.zip", sep = "/"))
-unzip(zipfile = "dataFiles.zip")
+# plot1.R
 
-SCC <- data.table::as.data.table(x = readRDS(file = "Source_Classification_Code.rds"))
-NEI <- data.table::as.data.table(x = readRDS(file = "summarySCC_PM25.rds"))
+# Load the data.table package
+library(data.table)
 
-# Prevents histogram from printing in scientific notation
-NEI[, Emissions := lapply(.SD, as.numeric), .SDcols = c("Emissions")]
+# Set working directory to where your .rds files are stored
+# Example: setwd("D:/Rprojects/NEI_data") 
+# OR use full path below if not setting working directory
 
-totalNEI <- NEI[, lapply(.SD, sum, na.rm = TRUE), .SDcols = c("Emissions"), by = year]
+# Load data files
+NEI <- as.data.table(readRDS("summarySCC_PM25.rds"))
 
-barplot(totalNEI[, Emissions]
-        , names = totalNEI[, year]
-        , xlab = "Years", ylab = "Emissions"
-        , main = "Emissions over the Years")
+# Convert Emissions to numeric
+NEI[, Emissions := as.numeric(Emissions)]
+
+# Aggregate total emissions by year
+totalNEI <- NEI[, .(Emissions = sum(Emissions, na.rm = TRUE)), by = year]
+
+# Save the plot to a PNG file
+png("plot1.png", width = 480, height = 480)
+
+# Base R barplot
+barplot(
+  height = totalNEI$Emissions / 1e6,  # convert to million tons for readability
+  names.arg = totalNEI$year,
+  xlab = "Year",
+  ylab = "Total PM2.5 Emissions (Million Tons)",
+  main = "Total PM2.5 Emissions in the US (1999–2008)",
+  col = "steelblue"
+)
+
+# Close the PNG device
 dev.off()
